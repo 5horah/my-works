@@ -4,9 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "work6": "parcel work6/index.html --host localhost",
-    "work7": "parcel work7/index.html --host localhost",
-    "work8": "parcel work8/index.html --host localhost"
+    "work6": "parcel work6/index.html --host 192.168.0.73",
+    "work7": "parcel work7/index.html --host 192.168.0.73",
+    "work8": "parcel work8/index.html --host 192.168.0.73",
+    "work9": "parcel work9/index.html --host 192.168.0.73"
   },
   "keywords": [],
   "author": "",
