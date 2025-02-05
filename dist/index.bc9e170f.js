@@ -11,7 +11,7 @@
  *
  */ const ViewerManager = function() {
     const imageCache = new Map();
-    let activeViewers = [];
+    let activeViewers = new Map();
     async function loadImage(url) {
         if (imageCache.has(url)) return imageCache.get(url);
         const img = await new Promise((resolve, reject)=>{
@@ -43,6 +43,8 @@
                 alpha: false
             });
             this.resizeHandler = this.setupResizeHandler();
+            this.hasButtons = target.hasAttribute("data-viewer-button");
+            this.autoRotateInterval = null;
             this.init();
         }
         async init() {
@@ -50,7 +52,68 @@
             this.target.appendChild(this.canvas);
             this.setupCanvas();
             await this.loadImages();
+            if (this.hasButtons && !this.target.querySelector(".viewer-control-wrapper")) {
+                const wrapper = document.createElement("div");
+                wrapper.classList.add("viewer-control-wrapper");
+                this.target.appendChild(wrapper);
+                this.addControlButtons(wrapper);
+            }
             this.bindEvents();
+            this.bindControlEvents();
+        }
+        addControlButtons(wrapper) {
+            if (wrapper.querySelector(".viewer-control")) return;
+            const createButton = (className, innerHTML)=>{
+                const button = document.createElement("button");
+                button.className = `viewer-control ${className}`;
+                button.innerHTML = innerHTML;
+                return button;
+            };
+            const leftButton = createButton("viewer-control--prev", "\u2190");
+            wrapper.appendChild(leftButton);
+            const rightButton = createButton("viewer-control--next", "\u2192");
+            wrapper.appendChild(rightButton);
+        }
+        bindControlEvents() {
+            const leftButton = this.target.querySelector(".viewer-control--prev");
+            const rightButton = this.target.querySelector(".viewer-control--next");
+            let rotationInterval = null;
+            const rotationDelay = 100;
+            const startRotation = (direction)=>{
+                if (rotationInterval) return;
+                if (this.images.length > 0) {
+                    this.rotate(direction);
+                    rotationInterval = setInterval(()=>{
+                        this.rotate(direction);
+                    }, rotationDelay);
+                }
+            };
+            const stopRotation = ()=>{
+                if (rotationInterval) {
+                    clearInterval(rotationInterval);
+                    rotationInterval = null;
+                }
+            };
+            if (leftButton) {
+                leftButton.addEventListener("mousedown", ()=>startRotation("left"));
+                leftButton.addEventListener("mouseup", stopRotation);
+                leftButton.addEventListener("mouseleave", stopRotation);
+                leftButton.addEventListener("touchstart", (e)=>{
+                    e.preventDefault();
+                    startRotation("left");
+                });
+                leftButton.addEventListener("touchend", stopRotation);
+            }
+            if (rightButton) {
+                rightButton.addEventListener("mousedown", ()=>startRotation("right"));
+                rightButton.addEventListener("mouseup", stopRotation);
+                rightButton.addEventListener("mouseleave", stopRotation);
+                rightButton.addEventListener("touchstart", (e)=>{
+                    e.preventDefault();
+                    startRotation("right");
+                });
+                rightButton.addEventListener("touchend", stopRotation);
+            }
         }
         setupCanvas() {
             const rect = this.target.getBoundingClientRect();
@@ -97,6 +160,14 @@
             const x = (canvas.width - img.width * scale) / 2;
             const y = (canvas.height - img.height * scale) / 2;
             ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+        }
+        rotate(direction) {
+            if (!this.images.length || !this.config.numFrames) return;
+            const totalFrames = this.config.numFrames;
+            if (direction === "left") this.currentFrame = this.currentFrame === 0 ? totalFrames - 1 : this.currentFrame - 1;
+            else this.currentFrame = (this.currentFrame + 1) % totalFrames;
+            this.previousSection = this.currentFrame;
+            this.renderFrame();
         }
         updateFrame(moveDistance) {
             const sectionWidth = this.canvas.width / this.config.numFrames;
@@ -167,6 +238,12 @@
             window.removeEventListener("touchend", this.handleDragEnd);
             window.removeEventListener("mouseleave", this.handleDragEnd);
             window.removeEventListener("resize", this.resizeHandler);
+            if (this.hasButtons) {
+                const leftButton = this.target.querySelector(".viewer-control--prev");
+                const rightButton = this.target.querySelector(".viewer-control--next");
+                if (leftButton) leftButton.remove();
+                if (rightButton) rightButton.remove();
+            }
         }
     }
     class TabComponent {
@@ -175,6 +252,7 @@
             this.events = new Map();
             this.buttons = container.querySelectorAll("[data-tab-button]");
             this.contents = container.querySelectorAll("[data-tab-content]");
+            this.containerId = container.id || `tab-container-${Math.random().toString(36).substr(2, 9)}`;
             this.init();
         }
         init() {
@@ -203,6 +281,13 @@
                 content.setAttribute("data-active", String(isActive));
             });
             this.container.setAttribute("data-active-tab", selectedId);
+            this.reinitializeViewers();
+        }
+        reinitializeViewers() {
+            const containerViewers = activeViewers.get(this.containerId) || [];
+            containerViewers.forEach((viewer)=>viewer.destroy());
+            const newViewers = Array.from(this.container.querySelectorAll("[data-product-viewer]")).map((element)=>new Viewer360(element));
+            activeViewers.set(this.containerId, newViewers);
         }
         bindEvents() {
             this.buttons.forEach((button)=>{
@@ -220,32 +305,28 @@
                 element.removeEventListener("click", handler);
             });
             this.events.clear();
+            const containerViewers = activeViewers.get(this.containerId) || [];
+            containerViewers.forEach((viewer)=>viewer.destroy());
+            activeViewers.delete(this.containerId);
         }
     }
     function initializeViewers() {
-        return Array.from(document.querySelectorAll("[data-product-viewer]")).map((element)=>new Viewer360(element));
+        const standaloneViewers = Array.from(document.querySelectorAll(":not([data-tab-container]) > [data-product-viewer]")).map((element)=>new Viewer360(element));
+        activeViewers.set("standalone", standaloneViewers);
+        return standaloneViewers;
     }
     function initializeTabs() {
         return Array.from(document.querySelectorAll("[data-tab-container]")).map((element)=>new TabComponent(element));
     }
     function initialize() {
-        activeViewers = initializeViewers();
+        initializeViewers();
         initializeTabs();
-        const activeTab = document.querySelector('[data-tab-content][data-active="true"]');
-        if (activeTab) {
-            const viewer = activeTab.querySelector("[data-product-viewer]");
-            if (viewer) activeViewers.push(new Viewer360(viewer));
-        }
-        document.querySelectorAll("[data-tab-button]").forEach((button)=>{
-            button.addEventListener("click", ()=>{
-                activeViewers.forEach((viewer)=>viewer.destroy());
-                activeViewers = initializeViewers();
-            });
-        });
     }
     function cleanup() {
-        activeViewers.forEach((viewer)=>viewer.destroy());
-        activeViewers = [];
+        activeViewers.forEach((viewers)=>{
+            viewers.forEach((viewer)=>viewer.destroy());
+        });
+        activeViewers.clear();
     }
     return {
         initialize,
