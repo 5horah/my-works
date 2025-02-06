@@ -7,11 +7,6 @@
   --viewer-error-color: #dc3545;
 }
 
-.line {
-  background-color: #000;
-  height: 2px;
-}
-
 [data-product-viewer] {
   width: var(--viewer-width, 100%);
   height: var(--viewer-height, 100%);
@@ -30,22 +25,21 @@
   display: block;
 }
 
-.viewer-control-wrapper {
+.viewer-control {
+  cursor: pointer;
   z-index: 10;
-  justify-content: space-between;
-  width: 100%;
-  display: flex;
+  background-color: red;
+  width: 40px;
+  height: 40px;
   position: absolute;
   top: 50%;
   left: 0;
   transform: translate3d(0, -50%, 0);
 }
 
-.viewer-control {
-  cursor: pointer;
-  background-color: red;
-  width: 40px;
-  height: 40px;
+.viewer-control--next {
+  left: auto;
+  right: 0;
 }
 
 .viewer-loading {

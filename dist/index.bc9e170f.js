@@ -1,14 +1,21 @@
 /**
  * 360도 제품 뷰어 라이브러리
- * 마우스 드래그나 터치 스와이프로 제품을 360도 회전하여 볼 수 있는 기능 제공
+ * 제품 이미지를 360도로 회전하여 볼 수 있는 인터랙티브 뷰어입니다.
+ *
+ * 주요 기능:
+ * - 마우스 드래그로 제품 회전
+ * - 터치 스와이프로 제품 회전
+ * - 좌/우 컨트롤 버튼으로 수동 회전
+ * - 이미지 프리로딩
+ * - 반응형 레이아웃 지원
+ * - 탭 컨테이너 내 뷰어 지원
  *
  * @example
- * // 수동 초기화
- * ViewerManager.initialize()
+ * // 뷰어 초기화
+ * ViewerManager.initialize();
  *
- * // 리소스 정리
+ * // 뷰어 제거 및 리소스 정리
  * ViewerManager.cleanup();
- *
  */ const ViewerManager = function() {
     const imageCache = new Map();
     let activeViewers = new Map();

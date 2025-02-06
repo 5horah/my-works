@@ -1,21 +1,14 @@
 /**
  * 360도 제품 뷰어 라이브러리
- * 제품 이미지를 360도로 회전하여 볼 수 있는 인터랙티브 뷰어입니다.
- *
- * 주요 기능:
- * - 마우스 드래그로 제품 회전
- * - 터치 스와이프로 제품 회전
- * - 좌/우 컨트롤 버튼으로 수동 회전
- * - 이미지 프리로딩
- * - 반응형 레이아웃 지원
- * - 탭 컨테이너 내 뷰어 지원
+ * 마우스 드래그나 터치 스와이프로 제품을 360도 회전하여 볼 수 있는 기능 제공
  *
  * @example
- * // 뷰어 초기화
- * ViewerManager.initialize();
+ * // 수동 초기화
+ * ViewerManager.initialize()
  *
- * // 뷰어 제거 및 리소스 정리
+ * // 리소스 정리
  * ViewerManager.cleanup();
+ *
  */
 
 const ViewerManager = (function () {
@@ -344,6 +337,7 @@ const ViewerManager = (function () {
     constructor(container) {
       this.container = container
       this.events = new Map()
+      this.contentWrap = container.querySelector("[data-tab-content-wrap]")
       this.buttons = container.querySelectorAll("[data-tab-button]")
       this.contents = container.querySelectorAll("[data-tab-content]")
       this.containerId =
@@ -356,6 +350,30 @@ const ViewerManager = (function () {
       this.setupAccessibility()
       this.updateTab(this.container.getAttribute("data-active-tab") || "0")
       this.bindEvents()
+      this.setupContentWrapCSS()
+    }
+
+    setupContentWrapCSS() {
+      if (this.contentWrap && this.contents.length > 0) {
+        const maxHeight = Array.from(this.contents).reduce((max, content) => {
+          return Math.max(max, content.offsetHeight)
+        }, 0)
+
+        this.contentWrap.style.setProperty("--canvas-height", `${maxHeight}px`)
+
+        window.addEventListener("resize", () => {
+          const newMaxHeight = Array.from(this.contents).reduce(
+            (max, content) => {
+              return Math.max(max, content.offsetHeight)
+            },
+            0,
+          )
+          this.contentWrap.style.setProperty(
+            "--canvas-height",
+            `${newMaxHeight}px`,
+          )
+        })
+      }
     }
 
     setupAccessibility() {
