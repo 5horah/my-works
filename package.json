@@ -7,7 +7,8 @@
     "work6": "parcel work6/index.html --host 192.168.0.73",
     "work7": "parcel work7/index.html --host 192.168.0.73",
     "work8": "parcel work8/index.html --host 192.168.0.73",
-    "work9": "parcel work9/index.html --host 192.168.0.73"
+    "work9": "parcel work9/index.html --host 192.168.0.73",
+    "work10": "parcel work10/index.html --host 192.168.0.73"
   },
   "keywords": [],
   "author": "",
